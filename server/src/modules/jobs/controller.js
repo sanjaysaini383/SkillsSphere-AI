@@ -6,6 +6,9 @@ import {
   applyToJob as applyToJobService,
   getJobApplications as getJobAppsService,
   getApplicantAnalytics as getApplicantAnalyticsData,
+  getMyAppliedJobIds as getMyAppliedJobIdsService,
+  getMyApplicationsWithDetails as getMyAppsDetailedService,
+  withdrawApplication as withdrawAppService,
 } from "./service.js";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
@@ -179,12 +182,12 @@ export const getRecruiterAnalytics = asyncHandler(async (req, res) => {
  * @access  Private (Students only)
  */
 export const applyToJobPosting = asyncHandler(async (req, res) => {
-  const { resumeId, coverNote } = req.body;
+  const { resumeId, resumeLink, coverNote } = req.body;
 
   const application = await applyToJobService(
     req.params.id,
     req.user._id,
-    { resumeId, coverNote }
+    { resumeId, resumeLink, coverNote }
   );
 
   res.status(201).json({
@@ -206,5 +209,55 @@ export const getApplications = asyncHandler(async (req, res) => {
     success: true,
     count: applications.length,
     applications,
+  });
+});
+
+/**
+ * @desc    Get current student's applied job IDs
+ * @route   GET /api/jobs/my-applications
+ * @access  Private (Students only)
+ */
+export const getMyApplications = asyncHandler(async (req, res) => {
+  const jobIds = await getMyAppliedJobIdsService(req.user._id);
+
+  res.status(200).json({
+    success: true,
+    appliedJobIds: jobIds,
+  });
+});
+
+/**
+ * @desc    Get current student's applied jobs with full details
+ * @route   GET /api/jobs/my-applications/details
+ * @access  Private (Students only)
+ */
+export const getMyApplicationsDetailed = asyncHandler(async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+
+  const result = await getMyAppsDetailedService(req.user._id, { page, limit });
+
+  res.status(200).json({
+    success: true,
+    count: result.applications.length,
+    totalCount: result.totalCount,
+    totalPages: result.totalPages,
+    currentPage: result.currentPage,
+    applications: result.applications,
+  });
+});
+
+/**
+ * @desc    Withdraw a job application
+ * @route   PATCH /api/jobs/:id/withdraw
+ * @access  Private (Students only)
+ */
+export const withdrawJobApplication = asyncHandler(async (req, res) => {
+  const application = await withdrawAppService(req.params.id, req.user._id);
+
+  res.status(200).json({
+    success: true,
+    message: "Application withdrawn successfully",
+    application,
   });
 });

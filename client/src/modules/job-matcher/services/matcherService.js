@@ -1,19 +1,10 @@
-export const getRecommendations = async (resumeId) => {
-  // fake API
-  return new Promise((resolve) =>
-    setTimeout(() => {
-      resolve({
-        score: 78,
-        missingSkills: ["Docker", "System Design"],
-        jobs: [
-          { title: "Frontend Developer", company: "Google", score: 80 },
-          { title: "React Developer", company: "Amazon", score: 75 },
-        ],
-      });
-    }, 1500)
-  );
-};
+import { apiRequest } from "../../../services/apiClient";
 
-export const uploadResume = async (file) => {
-  return getRecommendations();
+/**
+ * Get AI-powered job recommendations based on the student's latest resume
+ * @param {string} token - Auth token
+ * @returns {Promise<Object>} - { success, message, jobs, hasResume }
+ */
+export const getRecommendations = async (token) => {
+  return apiRequest("/api/jobs/recommendations", { token });
 };

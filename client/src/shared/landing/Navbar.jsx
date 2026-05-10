@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Home, FileText, LayoutDashboard, MessageSquare, LogIn, UserPlus, X, Menu, LogOut, User, ChevronDown, Briefcase, Moon, Sun } from 'lucide-react';
+import { Home, FileText, LayoutDashboard, MessageSquare, LogIn, UserPlus, X, Menu, LogOut, User, ChevronDown, Briefcase, Moon, Sun, Sparkles } from 'lucide-react';
 import Button from './Button';
 import { logout } from '../../features/auth/authSlice';
 
@@ -55,6 +55,7 @@ const Navbar = () => {
       ? [{ name: 'Manage Jobs', path: '/recruiter/jobs', icon: <Briefcase size={20} /> }]
       : [
           { name: 'Job Board', path: '/jobs', icon: <Briefcase size={20} /> },
+          { name: 'Job Match', path: '/job-matcher', icon: <Sparkles size={20} /> },
           { name: 'Resume Analyzer', path: '/resume-analyzer', icon: <FileText size={20} /> }
         ]
     ),
@@ -137,6 +138,16 @@ const Navbar = () => {
                     <LayoutDashboard size={18} />
                     Dashboard
                   </Link>
+                  {user?.role === 'student' && (
+                    <Link 
+                      to="/my-applications" 
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)] transition-colors"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <Briefcase size={18} />
+                      Applied Jobs
+                    </Link>
+                  )}
                   <button 
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:text-red-400 hover:bg-red-400/10 transition-colors mt-1 border-t border-[var(--border)] pt-3"

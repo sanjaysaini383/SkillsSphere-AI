@@ -283,7 +283,7 @@ export const getRecruiterAnalytics = async (recruiterId) => {
  * Apply to a job posting (for students)
  * @param {string} jobId - ID of the job
  * @param {string} applicantId - ID of the student
- * @param {Object} options - Optional fields (resumeId, coverNote)
+ * @param {Object} options - Optional fields (resumeId, resumeLink, coverNote)
  * @returns {Promise<Object>} - Created application
  */
 export const applyToJob = async (jobId, applicantId, options = {}) => {
@@ -296,6 +296,11 @@ export const applyToJob = async (jobId, applicantId, options = {}) => {
     throw new AppError("This job is not accepting applications", 400);
   }
 
+  // resumeLink is required for student applications
+  if (!options.resumeLink || !options.resumeLink.trim()) {
+    throw new AppError("A shareable resume link is required to apply", 400);
+  }
+
   // Check for duplicate application
   const existing = await JobApplication.findOne({ job: jobId, applicant: applicantId });
   if (existing) {
@@ -306,7 +311,8 @@ export const applyToJob = async (jobId, applicantId, options = {}) => {
     job: jobId,
     applicant: applicantId,
     resume: options.resumeId || null,
-    coverNote: options.coverNote || "",
+    resumeLink: options.resumeLink.trim(),
+    coverNote: options.coverNote?.trim() || "",
   });
 
   return application;
@@ -402,4 +408,79 @@ export const getApplicantAnalytics = async (recruiterId) => {
     applicantsByStatus,
     applicantsPerJob: perJobAgg,
   };
+};
+
+/**
+ * Get all job IDs the current student has applied to
+ * @param {string} applicantId - ID of the student
+ * @returns {Promise<string[]>} - Array of job IDs
+ */
+export const getMyAppliedJobIds = async (applicantId) => {
+  const applications = await JobApplication.find({ applicant: applicantId })
+    .select("job")
+    .lean();
+
+  return applications.map((app) => app.job.toString());
+};
+
+/**
+ * Get all applications with full job details for the current student (paginated)
+ * @param {string} applicantId - ID of the student
+ * @param {Object} options - Pagination options
+ * @param {number} options.page - Page number (1-indexed)
+ * @param {number} options.limit - Items per page
+ * @returns {Promise<Object>} - { applications, totalCount, totalPages, currentPage }
+ */
+export const getMyApplicationsWithDetails = async (applicantId, { page = 1, limit = 10 } = {}) => {
+  const skip = (page - 1) * limit;
+
+  const [applications, totalCount] = await Promise.all([
+    JobApplication.find({ applicant: applicantId })
+      .populate("job", "title skills location status salary jobLevel description")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    JobApplication.countDocuments({ applicant: applicantId }),
+  ]);
+
+  return {
+    applications,
+    totalCount,
+    totalPages: Math.ceil(totalCount / limit),
+    currentPage: page,
+  };
+};
+
+/**
+ * Withdraw a job application
+ * @param {string} jobId - ID of the job
+ * @param {string} applicantId - ID of the student
+ * @returns {Promise<Object>} - Updated application
+ */
+export const withdrawApplication = async (jobId, applicantId) => {
+  const application = await JobApplication.findOne({
+    job: jobId,
+    applicant: applicantId,
+  });
+
+  if (!application) {
+    throw new AppError("Application not found", 404);
+  }
+
+  if (application.status === "withdrawn") {
+    throw new AppError("Application is already withdrawn", 400);
+  }
+
+  if (["shortlisted", "rejected"].includes(application.status)) {
+    throw new AppError(
+      `Cannot withdraw a ${application.status} application`,
+      400
+    );
+  }
+
+  application.status = "withdrawn";
+  await application.save();
+
+  return application;
 };
