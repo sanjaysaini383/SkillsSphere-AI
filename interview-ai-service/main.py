@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.transcription import router as transcription_router
+from routers.evaluation import router as evaluation_router
 
 app = FastAPI(
     title="Interview AI Service",
@@ -26,3 +27,4 @@ async def health_check():
 
 # Register routers
 app.include_router(transcription_router, prefix="/api")
+app.include_router(evaluation_router, prefix="/api")
