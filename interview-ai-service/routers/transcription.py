@@ -1,10 +1,10 @@
 import os
 import tempfile
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from services.whisper_service import transcribe_audio
+from dependencies import verify_internal_api_key
 
-router = APIRouter()
-
+router = APIRouter(dependencies=[Depends(verify_internal_api_key)])
 
 @router.post("/transcribe")
 async def transcribe(audio: UploadFile = File(...)):

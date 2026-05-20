@@ -1,12 +1,12 @@
 from typing import List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from services.semantic_service import compute_technical_score
 from services.nlp_service import detect_concepts
 from services.communication_analyzer import analyze_communication
+from dependencies import verify_internal_api_key
 
-router = APIRouter()
-
+router = APIRouter(dependencies=[Depends(verify_internal_api_key)])
 
 class EvaluationRequest(BaseModel):
     transcript: str

@@ -20,6 +20,14 @@ const TRANSCRIBE_TIMEOUT = parseInt(
   10
 );
 const MAX_RETRIES = 3;
+const AI_SERVICE_KEY = process.env.INTERNAL_SERVICE_KEY || "dev_internal_key";
+
+const getAuthHeaders = (additionalHeaders = {}) => {
+  return {
+    ...additionalHeaders,
+    "Authorization": `Bearer ${AI_SERVICE_KEY}`
+  };
+};
 
 /**
  * Sleep for a given number of milliseconds.
@@ -69,6 +77,7 @@ const fetchWithRetry = async (endpoint, options, timeoutMs) => {
       const startTime = Date.now();
       const res = await fetch(`${AI_SERVICE_URL}${endpoint}`, {
         ...options,
+        headers: getAuthHeaders(options.headers || {}),
         signal: controller.signal,
       });
       clearTimeout(timeout);
