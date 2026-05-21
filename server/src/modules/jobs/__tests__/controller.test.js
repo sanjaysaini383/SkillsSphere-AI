@@ -1,9 +1,7 @@
-import { jest } from "@jest/globals";
+import test, { describe, it, beforeEach, mock } from "node:test";
+import assert from "node:assert/strict";
 import * as jobController from "../controller.js";
 import * as jobService from "../service.js";
-
-// Mock the service layer so we only test controller logic
-jest.mock("../service.js");
 
 describe("Job Controller", () => {
   let req, res, next;
@@ -15,11 +13,11 @@ describe("Job Controller", () => {
       user: { _id: "user123" }
     };
     res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      status: mock.fn(function() { return this; }),
+      json: mock.fn()
     };
-    next = jest.fn();
-    jest.clearAllMocks();
+    next = mock.fn();
+    mock.restoreAll();
   });
 
   describe("createJobPosting", () => {
@@ -27,25 +25,31 @@ describe("Job Controller", () => {
       req.body = { title: "Test Job", skills: ["JS"] };
       
       const mockCreatedJob = { _id: "job123", ...req.body, recruiter: req.user._id };
-      jobService.createJob.mockResolvedValue(mockCreatedJob);
+      mock.method(jobService, "createJob", async () => mockCreatedJob);
 
       await jobController.createJobPosting(req, res, next);
 
-      expect(jobService.createJob).toHaveBeenCalledWith(req.body, req.user._id);
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({
+      assert.strictEqual(jobService.createJob.mock.calls.length, 1);
+      assert.deepStrictEqual(jobService.createJob.mock.calls[0].arguments, [req.body, req.user._id]);
+      
+      assert.strictEqual(res.status.mock.calls.length, 1);
+      assert.deepStrictEqual(res.status.mock.calls[0].arguments, [201]);
+      
+      assert.strictEqual(res.json.mock.calls.length, 1);
+      assert.deepStrictEqual(res.json.mock.calls[0].arguments, [{
         success: true,
         job: mockCreatedJob
-      });
+      }]);
     });
 
     it("should pass errors to next()", async () => {
       const error = new Error("Database error");
-      jobService.createJob.mockRejectedValue(error);
+      mock.method(jobService, "createJob", async () => { throw error; });
 
       await jobController.createJobPosting(req, res, next);
 
-      expect(next).toHaveBeenCalledWith(error);
+      assert.strictEqual(next.mock.calls.length, 1);
+      assert.deepStrictEqual(next.mock.calls[0].arguments, [error]);
     });
   });
 });

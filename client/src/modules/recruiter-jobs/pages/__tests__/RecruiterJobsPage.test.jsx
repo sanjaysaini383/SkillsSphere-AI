@@ -13,11 +13,11 @@ vi.mock('../../services/jobPostingService', () => ({
 }))
 
 // Mock components
-vi.mock('../../../shared/landing/Navbar', () => ({
+vi.mock('../../../../shared/landing/Navbar', () => ({
   default: () => <nav data-testid="navbar">Navbar</nav>,
 }))
 
-vi.mock('../../../shared/components/Input', () => ({
+vi.mock('../../../../shared/components/Input', () => ({
   default: ({ value, onChange, ...props }) => (
     <input
       type="text"
@@ -29,11 +29,11 @@ vi.mock('../../../shared/components/Input', () => ({
   ),
 }))
 
-vi.mock('../../../shared/components/LoadingState', () => ({
-  default: ({ message }) => <div data-testid="loading-state">{message}</div>,
+vi.mock('../../../student-jobs/components/JobCardSkeleton', () => ({
+  default: () => <div data-testid="loading-state">Fetching your job postings...</div>,
 }))
 
-vi.mock('../../../shared/components/ErrorState', () => ({
+vi.mock('../../../../shared/components/ErrorState', () => ({
   default: ({ message, onRetry }) => (
     <div data-testid="error-state">
       <span>{message}</span>
@@ -42,7 +42,7 @@ vi.mock('../../../shared/components/ErrorState', () => ({
   ),
 }))
 
-vi.mock('../../../shared/components/EmptyState', () => ({
+vi.mock('../../../../shared/components/EmptyState', () => ({
   default: ({ title, description, action }) => (
     <div data-testid="empty-state">
       <h3>{title}</h3>
@@ -52,7 +52,7 @@ vi.mock('../../../shared/components/EmptyState', () => ({
   ),
 }))
 
-vi.mock('../../components/JobPostingCard', () => ({
+vi.mock('../../../../shared/components/JobViewerCard', () => ({
   default: ({ job, onEdit, onViewStats }) => (
     <div data-testid={`job-card-${job._id || job.id}`}>
       <h4>{job.title}</h4>
@@ -90,7 +90,9 @@ describe('RecruiterJobsPage', () => {
 
     renderWithProviders(<RecruiterJobsPage />)
 
-    expect(screen.getByTestId('loading-state')).toHaveTextContent('Fetching your job postings...')
+    const skeletons = screen.getAllByTestId('loading-state')
+    expect(skeletons.length).toBeGreaterThan(0)
+    expect(skeletons[0]).toHaveTextContent('Fetching your job postings...')
   })
 
   it('fetches and displays jobs on mount', async () => {
@@ -103,7 +105,7 @@ describe('RecruiterJobsPage', () => {
     renderWithProviders(<RecruiterJobsPage />)
 
     await waitFor(() => {
-      expect(jobPostingService.getRecruiterJobs).toHaveBeenCalledWith('test-token')
+      expect(jobPostingService.getRecruiterJobs).toHaveBeenCalledWith('test-token', 1, 6)
       expect(screen.getByTestId('job-card-1')).toBeInTheDocument()
       expect(screen.getByTestId('job-card-2')).toBeInTheDocument()
       expect(screen.getByText('Senior Engineer')).toBeInTheDocument()

@@ -9,7 +9,8 @@ import LoadingState from "../../../shared/components/LoadingState";
 import ErrorState from "../../../shared/components/ErrorState";
 import EmptyState from "../../../shared/components/EmptyState";
 import JobCardSkeleton from "../../student-jobs/components/JobCardSkeleton";
-import { JobViewerCard, Pagination } from "../../../shared/components";
+import JobViewerCard from "../../../shared/components/JobViewerCard";
+import Pagination from "../../../shared/components/Pagination";
 import {
   getRecruiterJobs,
   deleteJobPosting,

@@ -116,8 +116,8 @@ export const normalizeApiError = (error) => {
   }
 
   const status =
-    (typeof error.status === "number" && error.status) ||
-    (typeof error.response?.status === "number" && error.response.status) ||
+    (typeof error.status === "number" ? error.status : null) ??
+    (typeof error.response?.status === "number" ? error.response.status : null) ??
     500;
 
   const data = error.data ?? error.response?.data ?? null;

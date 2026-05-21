@@ -1,18 +1,13 @@
-import { jest } from "@jest/globals";
+import test, { describe, it, beforeEach, mock } from "node:test";
+import assert from "node:assert/strict";
 import * as jobService from "../service.js";
 import JobPosting from "../../../database/models/JobPosting.js";
 import JobApplication from "../../../database/models/JobApplication.js";
 import AppError from "../../../utils/AppError.js";
 
-// Mock the models
-jest.mock("../../../database/models/JobPosting.js");
-jest.mock("../../../database/models/JobApplication.js");
-jest.mock("../../resumes/service.js");
-jest.mock("../../matching/service.js");
-
 describe("Job Service", () => {
-  afterEach(() => {
-    jest.clearAllMocks();
+  beforeEach(() => {
+    mock.restoreAll();
   });
 
   describe("createJob", () => {
@@ -21,15 +16,16 @@ describe("Job Service", () => {
       const mockRecruiterId = "recruiter123";
       
       const mockCreatedJob = { ...mockJobData, recruiter: mockRecruiterId, _id: "job123" };
-      JobPosting.create = jest.fn().mockResolvedValue(mockCreatedJob);
+      mock.method(JobPosting, "create", async () => mockCreatedJob);
 
       const result = await jobService.createJob(mockJobData, mockRecruiterId);
 
-      expect(JobPosting.create).toHaveBeenCalledWith({
+      assert.strictEqual(JobPosting.create.mock.calls.length, 1);
+      assert.deepStrictEqual(JobPosting.create.mock.calls[0].arguments, [{
         ...mockJobData,
         recruiter: mockRecruiterId,
-      });
-      expect(result).toEqual(mockCreatedJob);
+      }]);
+      assert.deepStrictEqual(result, mockCreatedJob);
     });
   });
 
@@ -42,33 +38,48 @@ describe("Job Service", () => {
       const mockExistingJob = { _id: mockJobId, recruiter: { toString: () => mockRecruiterId } };
       const mockUpdatedJob = { ...mockExistingJob, ...mockUpdateData };
 
-      JobPosting.findById = jest.fn().mockResolvedValue(mockExistingJob);
-      JobPosting.findByIdAndUpdate = jest.fn().mockResolvedValue(mockUpdatedJob);
+      mock.method(JobPosting, "findById", async () => mockExistingJob);
+      mock.method(JobPosting, "findByIdAndUpdate", async () => mockUpdatedJob);
 
       const result = await jobService.updateJob(mockJobId, mockUpdateData, mockRecruiterId);
 
-      expect(JobPosting.findById).toHaveBeenCalledWith(mockJobId);
-      expect(JobPosting.findByIdAndUpdate).toHaveBeenCalledWith(
+      assert.strictEqual(JobPosting.findById.mock.calls.length, 1);
+      assert.deepStrictEqual(JobPosting.findById.mock.calls[0].arguments, [mockJobId]);
+      
+      assert.strictEqual(JobPosting.findByIdAndUpdate.mock.calls.length, 1);
+      assert.deepStrictEqual(JobPosting.findByIdAndUpdate.mock.calls[0].arguments, [
         mockJobId,
         mockUpdateData,
         { new: true, runValidators: true }
-      );
-      expect(result).toEqual(mockUpdatedJob);
+      ]);
+      assert.deepStrictEqual(result, mockUpdatedJob);
     });
 
     it("should throw AppError(404) if job not found", async () => {
-      JobPosting.findById = jest.fn().mockResolvedValue(null);
+      mock.method(JobPosting, "findById", async () => null);
 
-      await expect(jobService.updateJob("invalidId", {}, "recruiter123")).rejects.toThrow(AppError);
-      await expect(jobService.updateJob("invalidId", {}, "recruiter123")).rejects.toMatchObject({ statusCode: 404 });
+      await assert.rejects(
+        async () => await jobService.updateJob("invalidId", {}, "recruiter123"),
+        (err) => {
+          assert.ok(err instanceof AppError);
+          assert.strictEqual(err.statusCode, 404);
+          return true;
+        }
+      );
     });
 
     it("should throw AppError(403) if recruiter is not the owner", async () => {
       const mockExistingJob = { _id: "job123", recruiter: { toString: () => "differentRecruiter" } };
-      JobPosting.findById = jest.fn().mockResolvedValue(mockExistingJob);
+      mock.method(JobPosting, "findById", async () => mockExistingJob);
 
-      await expect(jobService.updateJob("job123", {}, "recruiter123")).rejects.toThrow(AppError);
-      await expect(jobService.updateJob("job123", {}, "recruiter123")).rejects.toMatchObject({ statusCode: 403 });
+      await assert.rejects(
+        async () => await jobService.updateJob("job123", {}, "recruiter123"),
+        (err) => {
+          assert.ok(err instanceof AppError);
+          assert.strictEqual(err.statusCode, 403);
+          return true;
+        }
+      );
     });
   });
 
@@ -79,15 +90,20 @@ describe("Job Service", () => {
 
       const mockExistingJob = { _id: mockJobId, recruiter: { toString: () => mockRecruiterId } };
       
-      JobPosting.findById = jest.fn().mockResolvedValue(mockExistingJob);
-      JobApplication.deleteMany = jest.fn().mockResolvedValue({ deletedCount: 5 });
-      JobPosting.findByIdAndDelete = jest.fn().mockResolvedValue(mockExistingJob);
+      mock.method(JobPosting, "findById", async () => mockExistingJob);
+      mock.method(JobApplication, "deleteMany", async () => ({ deletedCount: 5 }));
+      mock.method(JobPosting, "findByIdAndDelete", async () => mockExistingJob);
 
       await jobService.deleteJob(mockJobId, mockRecruiterId);
 
-      expect(JobPosting.findById).toHaveBeenCalledWith(mockJobId);
-      expect(JobApplication.deleteMany).toHaveBeenCalledWith({ job: mockJobId });
-      expect(JobPosting.findByIdAndDelete).toHaveBeenCalledWith(mockJobId);
+      assert.strictEqual(JobPosting.findById.mock.calls.length, 1);
+      assert.deepStrictEqual(JobPosting.findById.mock.calls[0].arguments, [mockJobId]);
+      
+      assert.strictEqual(JobApplication.deleteMany.mock.calls.length, 1);
+      assert.deepStrictEqual(JobApplication.deleteMany.mock.calls[0].arguments, [{ job: mockJobId }]);
+      
+      assert.strictEqual(JobPosting.findByIdAndDelete.mock.calls.length, 1);
+      assert.deepStrictEqual(JobPosting.findByIdAndDelete.mock.calls[0].arguments, [mockJobId]);
     });
   });
 });

@@ -11,7 +11,7 @@ vi.mock("../../../../services/apiClient", () => ({
   apiRequest: vi.fn(),
   normalizeApiError: vi.fn((error) => ({
     message: error.message || "Something went wrong",
-    status: error.status || 500,
+    status: error.status ?? 500,
     errors: error.errors || {},
   })),
 }));
@@ -24,7 +24,7 @@ describe("jobPostingService", () => {
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("createJobPosting", () => {
@@ -55,7 +55,7 @@ describe("jobPostingService", () => {
 
       await createJobPosting(validJobData, mockToken);
 
-      expect(apiRequest).toHaveBeenCalledWith("/api/recruiter/jobs", {
+      expect(apiRequest).toHaveBeenCalledWith("/api/jobs", {
         method: "POST",
         body: validJobData,
         token: mockToken,
@@ -171,7 +171,7 @@ describe("jobPostingService", () => {
 
       await getRecruiterJobs(mockToken);
 
-      expect(apiRequest).toHaveBeenCalledWith("/api/recruiter/jobs", {
+      expect(apiRequest).toHaveBeenCalledWith("/api/jobs/recruiter?page=1&limit=10", {
         token: mockToken,
       });
     });
@@ -185,7 +185,13 @@ describe("jobPostingService", () => {
 
       const result = await getRecruiterJobs(mockToken);
 
-      expect(result).toEqual({ success: true, jobs: mockJobs });
+      expect(result).toEqual({ 
+        success: true, 
+        jobs: mockJobs,
+        currentPage: 1,
+        totalPages: 1,
+        totalCount: 0
+      });
     });
 
     it("handles response with data field instead of jobs", async () => {
@@ -218,7 +224,7 @@ describe("jobPostingService", () => {
 
       await getJobPostingById("123", mockToken);
 
-      expect(apiRequest).toHaveBeenCalledWith("/api/recruiter/jobs/123", {
+      expect(apiRequest).toHaveBeenCalledWith("/api/jobs/123", {
         token: mockToken,
       });
     });

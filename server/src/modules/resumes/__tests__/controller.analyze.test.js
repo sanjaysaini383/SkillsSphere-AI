@@ -89,7 +89,12 @@ const stubControllerDependencies = () => {
         user: userId,
       };
     },
-
+    AnalysisHistory: {
+      create: async () => ({}),
+      countDocuments: async () => 0,
+      find: () => ({ sort: () => ({ limit: () => ({ select: async () => [] }) }) }),
+      deleteMany: async () => ({}),
+    }
   });
 
   return savedPayloads;
@@ -121,6 +126,9 @@ test("analyze with jobDescription preserves legacy fields and includes evaluator
     jobDescription: "Need JavaScript Node.js developer with 2 years experience and MongoDB.",
   });
 
+  if (status !== 200) {
+    console.error("Test failed with status:", status, "body:", body);
+  }
   assert.equal(status, 200);
   assertLegacyAnalyzeResponse(body);
   assert.equal(body.skillMatch.score, 67);

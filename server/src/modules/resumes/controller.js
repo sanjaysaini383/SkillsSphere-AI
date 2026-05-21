@@ -23,6 +23,7 @@ import { generateComparisonInsights } from "../../utils/aiComparison.js";
 const defaultDependencies = {
   parseResume,
   upsertResume: (userId, payload) => resumeService.upsertResume(userId, payload),
+  AnalysisHistory,
 };
 
 
@@ -141,7 +142,7 @@ export const analyzeResume = async (req, res) => {
     });
 
     // Save Analysis History
-    await AnalysisHistory.create({
+    await controllerDependencies.AnalysisHistory.create({
       user: req.user._id,
       score: safePipeline.score || 0,
       classification: safePipeline.classification?.level || "Beginner",
@@ -153,16 +154,16 @@ export const analyzeResume = async (req, res) => {
     });
 
     // Clean up: Limit history to last 10 versions to prevent bloat (Optimized with direct deletion)
-    const historyCount = await AnalysisHistory.countDocuments({ user: req.user._id });
+    const historyCount = await controllerDependencies.AnalysisHistory.countDocuments({ user: req.user._id });
     if (historyCount > 10) {
       const surplus = historyCount - 10;
-      const oldestRecords = await AnalysisHistory.find({ user: req.user._id })
+      const oldestRecords = await controllerDependencies.AnalysisHistory.find({ user: req.user._id })
         .sort({ createdAt: 1 })
         .limit(surplus)
         .select("_id");
       
       if (oldestRecords.length > 0) {
-        await AnalysisHistory.deleteMany({
+        await controllerDependencies.AnalysisHistory.deleteMany({
           _id: { $in: oldestRecords.map(r => r._id) }
         });
       }
